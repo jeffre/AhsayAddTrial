@@ -1,72 +1,45 @@
 import httplib, urllib
 
-#convert 2 digit hex into 8 digits then decode to ASCII 
-def getChar(hex):
-  return '000000'.decode('hex')+hex.decode('hex')
+url 	= 'eval.ahsay.com'
+accounts	= [{
+		'LOGIN_NAME'	: 'username4',
+		'PASSWORD'	: 'password',
+		'EMAIL'		: 'ahsay@mailinator.com'
+	},{
+		'LOGIN_NAME'	: 'username5',
+		'PASSWORD'	: 'password',
+		'EMAIL'		: 'ahsay@mailinator.com'
+}]
+shared	={
+	'TIMEZONE'		: 'GMT-07:00 (MST)',
+	'agent'		: 'obm',
+	'LANGUAGE'	: 'en',
+	'SEQ'		: '1',
+	'E'			: 'N',
+	'B'			: 'N'
+}
+agent = 'acb'
 
-#create a 2 digit hex of a vars length
-def getHexLength(var):
-  if len("%x" % len(var)) < 2:
-    return '0'+"%x" % len(var)
-  else:
-    return "%x" % len(var)
+def main():
+	for a in accounts:
+		post_data = ""
+		for key, val in a.iteritems():
+			post_data += ahsaypad(key, val)
+			
+		for key, val in shared.iteritems():
+			post_data += ahsaypad(key, val)
 
-#clean the code
-params = ''
-def add(var1, var2):
-  global params
-  #every pair of variable and value is encased by P; they are individually precusored
-  #by an 8 digit hex that must equal the length of its respective variable or value
-  params += 'P'+getChar(getHexLength(var1))+var1+getChar(getHexLength(var2))+var2+'P'
+		conn = httplib.HTTPConnection(url)
+		conn.request("POST", "/obs/"+agent+"5.5/NewTrial.obc", post_data)	#registers ACB agent
+		response = conn.getresponse()
+		http_response = response.read()
+		print http_response
 
-#the cycle
-accountscreated = 0 
-accountsfailed = 0 
-def run(var):
-  global params
-  global accountscreated
-  global accountsfailed
-  for i in range(1,var+1):
-    username = 'username' + str(i)
-    alias = 'alias' + str(i)
-    password = 'password'
-    email = 'user'  + str(i) + '@email.com'
-    language = 'en'
-    timezone = 'GMT-07:00 (MST)'
-    seq = '1'
-    e = 'N'
-    b = 'N'
-
-    add('B', b)
-    add('LOGIN_NAME', username)	#required
-    add('PASSWORD', password)	#required
-    add('TIMEZONE', timezone)
-    add('SEQ', seq)
-    add('ALIAS', alias)
-    add('EMAIL', email)
-    add('LANGUAGE', language)
-    add('E', e)
-    #add('ReferralKey', ReferralKey)
-
-    conn = httplib.HTTPConnection("eval.ahsay.com")
-    #conn.request("POST", "/obs/obm5.5/NewTrial.obc", params)	#registers OBM agent
-    conn.request("POST", "/obs/acb5.5/NewTrial.obc", params)	#registers ACB agent
-    response = conn.getresponse()
-    #print response.status, response.reason, response.getheader('server')
-    data = response.read()
-    if "OK" in data:
-      accountscreated = accountscreated + 1
-      print username + " (" + alias + ") created"
-    else:
-      accountsfailed = accountsfailed + 1
-      if "NO_TRIAL_HOME" in data:
-        print 'Server is full.  No more trials can be created.'
-        return
-      else:
-        print 'Error Response: "' + data[data.find("<Reply><")+8:data.find("/></Reply>")] + '" ' + username + " (" + alias + ")"
-    conn.close()
-    params = ''
+def ahsaypad(key, val):
+	n	= '000000'.decode('hex')
+	o	= n + chr(len(key)) + key
+	o	+= n+ chr(len(val)) + val
+	return 'P'+o+'P'
     
-#Max number of trials to create
-run(7)
-print "Finished:", accountscreated, " created,", accountsfailed, "skipped."
+if __name__ == "__main__":
+	main()
